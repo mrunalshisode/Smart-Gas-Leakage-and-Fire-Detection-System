@@ -1,0 +1,186 @@
+[
+  {
+    "category": "System Connectivity",
+    "testName": "Server & Health Endpoint",
+    "expected": "HTTP 200, status: OK",
+    "actual": "HTTP 200, status: OK",
+    "status": "PASS",
+    "details": "Uptime: 13.085767s"
+  },
+  {
+    "category": "REST API",
+    "testName": "GET / (Root Operational Check)",
+    "expected": "HTTP 200 with status: online",
+    "actual": "HTTP 200, status: online",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "category": "REST API",
+    "testName": "GET /api/health",
+    "expected": "HTTP 200 with status: OK",
+    "actual": "HTTP 200, status: OK",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "category": "REST API",
+    "testName": "POST /api/sensors (Normal reading: gas 180, flame false)",
+    "expected": "HTTP 201, gasAlert: false, fireAlert: false",
+    "actual": "HTTP 201, gasAlert: false, fireAlert: false",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "category": "REST API",
+    "testName": "POST /api/sensors (Gas leakage reading: gas 580, flame false)",
+    "expected": "HTTP 201, gasAlert: true, fireAlert: false",
+    "actual": "HTTP 201, gasAlert: true, fireAlert: false",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "category": "REST API",
+    "testName": "POST /api/sensors (Fire detection reading: gas 140, flame true)",
+    "expected": "HTTP 201, gasAlert: false, fireAlert: true",
+    "actual": "HTTP 201, gasAlert: false, fireAlert: true",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "category": "REST API",
+    "testName": "POST /api/sensors (Combined reading: gas 850, flame true)",
+    "expected": "HTTP 201, gasAlert: true, fireAlert: true",
+    "actual": "HTTP 201, gasAlert: true, fireAlert: true",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "category": "REST API",
+    "testName": "POST /api/sensors (Missing gasLevel validation)",
+    "expected": "HTTP 400, message: \"gasLevel is required\"",
+    "actual": "HTTP 400, message: \"gasLevel is required\"",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "category": "REST API",
+    "testName": "GET /api/sensors/latest",
+    "expected": "HTTP 200 with sensor data object",
+    "actual": "HTTP 200, device: FINAL_TEST_ESP32, gas: 850",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "category": "REST API",
+    "testName": "GET /api/sensors/history?limit=10",
+    "expected": "HTTP 200 with array of logs",
+    "actual": "HTTP 200, count: 10, array length: 10",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "category": "REST API",
+    "testName": "GET /api/alerts/latest",
+    "expected": "HTTP 200 with alert object",
+    "actual": "HTTP 200, alertType: GAS_LEAK",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "category": "REST API",
+    "testName": "GET /api/alerts (Default History)",
+    "expected": "HTTP 200 with alert list",
+    "actual": "HTTP 200, count: 7",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "category": "REST API",
+    "testName": "GET /api/alerts?limit=5",
+    "expected": "HTTP 200 with at most 5 alerts",
+    "actual": "HTTP 200, returned length: 5",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "category": "REST API",
+    "testName": "GET /api/alerts?severity=HIGH",
+    "expected": "HTTP 200, all records have severity HIGH",
+    "actual": "HTTP 200, count: 5, all matched HIGH: true",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "category": "REST API",
+    "testName": "GET /api/alerts?alertType=GAS_LEAK",
+    "expected": "HTTP 200, all records have alertType GAS_LEAK",
+    "actual": "HTTP 200, count: 5, all matched GAS_LEAK: true",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "category": "Real-Time Setup",
+    "testName": "Socket.IO Client Connection",
+    "expected": "Socket connected to server",
+    "actual": "Connected",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "category": "Real-Time Event",
+    "testName": "Socket.IO sensor-data Event",
+    "expected": "Received telemetry with deviceId FINAL_RT_DEVICE & gasLevel 620",
+    "actual": "Received: device FINAL_RT_DEVICE, gas 620",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "category": "Real-Time Event",
+    "testName": "Socket.IO alert Event",
+    "expected": "Received alert with COMBINED_HAZARD and CRITICAL severity",
+    "actual": "Received: COMBINED_HAZARD, severity: CRITICAL",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "category": "Real-Time MQTT",
+    "testName": "MQTT Alert Topic Publication (iotap/sensor/alerts)",
+    "expected": "Published COMBINED_HAZARD on alert topic for ESP32 actuators",
+    "actual": "Received on MQTT: COMBINED_HAZARD",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "category": "Database Verification",
+    "testName": "SensorLog Ingestion in MongoDB",
+    "expected": "Latest MongoDB reading matches published telemetry (FINAL_RT_DEVICE, 620)",
+    "actual": "Saved in MongoDB with ID: 6aad52956721b0c881428a9e",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "category": "Database Verification",
+    "testName": "Alert Ingestion in MongoDB",
+    "expected": "Latest MongoDB alert matches COMBINED_HAZARD for FINAL_RT_DEVICE",
+    "actual": "Saved in MongoDB with ID: 6aad52956721b0c881428a9f",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "category": "Alert Cooldown",
+    "testName": "Duplicate Alert Suppression During 60s Cooldown",
+    "expected": "Alert count remains constant; duplicate is suppressed",
+    "actual": "Suppressed successfully (Count before: 1, Count after: 1)",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "category": "Alert Cooldown",
+    "testName": "Normal State Reset & New Incident Trigger",
+    "expected": "Hazard returning after normal state immediately triggers a new alert",
+    "actual": "Triggered new alert on return (Previous count: 1, New count: 2)",
+    "status": "PASS",
+    "details": ""
+  }
+]

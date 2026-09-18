@@ -1,0 +1,34 @@
+{
+  "name": "iotap-gas-fire-backend",
+  "version": "1.0.0",
+  "description": "Backend service for Smart Gas Leakage and Fire Detection System using Node.js, Express, MongoDB, MQTT, and Socket.IO",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "keywords": [
+    "iot",
+    "gas-detection",
+    "fire-detection",
+    "esp32",
+    "mqtt",
+    "socketio",
+    "express",
+    "mongodb"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.0",
+    "express": "^5.2.1",
+    "mongoose": "^9.10.1",
+    "mqtt": "^5.16.0",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14",
+    "socket.io-client": "^4.8.3"
+  }
+}
