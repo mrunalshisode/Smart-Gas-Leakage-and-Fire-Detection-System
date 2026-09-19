@@ -3,6 +3,7 @@ const cors = require('cors');
 
 const sensorRoutes = require('./routes/sensorRoutes');
 const alertRoutes = require('./routes/alertRoutes');
+const { getMQTTClient } = require('./config/mqtt');
 
 const app = express();
 
@@ -22,10 +23,12 @@ app.get('/', (req, res) => {
 
 // Detailed health check endpoint
 app.get('/api/health', (req, res) => {
+  const mqttClient = getMQTTClient();
   res.status(200).json({
     status: 'OK',
     service: 'IoTAP Smart Gas & Fire Detection Backend',
     uptime: process.uptime(),
+    mqtt: mqttClient && mqttClient.connected ? 'connected' : 'connecting',
     timestamp: new Date().toISOString(),
   });
 });

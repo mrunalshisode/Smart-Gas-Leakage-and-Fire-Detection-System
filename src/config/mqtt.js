@@ -6,47 +6,105 @@ const { shouldTriggerAlert } = require('../services/alertManager');
 
 let client = null;
 
+/**
+ * Initializes the MQTT client with resilient reconnection, payload validation,
+ * database persistence, Socket.IO real-time emission, and alert publishing.
+ */
 const initMQTT = () => {
   const brokerUrl = process.env.MQTT_BROKER_URL || 'mqtt://broker.hivemq.com:1883';
   const sensorTopic = process.env.MQTT_TOPIC_SENSOR || 'iotap/sensor/data';
   const alertTopic = process.env.MQTT_TOPIC_ALERT || 'iotap/sensor/alerts';
   const gasThreshold = Number(process.env.GAS_THRESHOLD_PPM) || 400;
 
-  console.log(`[MQTT] Connecting to broker at ${brokerUrl}...`);
-  client = mqtt.connect(brokerUrl);
+  // Generate unique backend client identifier to avoid broker session collisions
+  const clientId = `iotap_backend_${Math.random().toString(16).substring(2, 8)}`;
 
+  const options = {
+    clientId,
+    clean: true,
+    reconnectPeriod: 2000, // Reconnect every 2s on disconnection
+    connectTimeout: 30000, // 30s timeout
+  };
+
+  console.log(`[MQTT] Connecting to broker at ${brokerUrl} (Client ID: ${clientId})...`);
+  client = mqtt.connect(brokerUrl, options);
+
+  // Connection event handler
   client.on('connect', () => {
     console.log(`[MQTT] Successfully connected to broker: ${brokerUrl}`);
-    client.subscribe(sensorTopic, (err) => {
+    client.subscribe(sensorTopic, { qos: 0 }, (err) => {
       if (err) {
-        console.error(`[MQTT] Failed to subscribe to topic ${sensorTopic}:`, err.message);
+        console.error(`[MQTT] Failed to subscribe to topic "${sensorTopic}":`, err.message);
       } else {
-        console.log(`[MQTT] Subscribed to topic: ${sensorTopic}`);
+        console.log(`[MQTT] Subscribed to sensor telemetry topic: "${sensorTopic}"`);
       }
     });
+  });
+
+  // Reconnection and lifecycle handlers for complete operational visibility
+  client.on('reconnect', () => {
+    console.log('[MQTT] Attempting to reconnect to broker...');
+  });
+
+  client.on('offline', () => {
+    console.warn('[MQTT] Client is currently offline.');
+  });
+
+  client.on('close', () => {
+    console.log('[MQTT] Connection closed.');
   });
 
   client.on('error', (err) => {
     console.error(`[MQTT] Connection error: ${err.message}`);
   });
 
+  // Message handler for incoming sensor telemetry
   client.on('message', async (topic, message) => {
     if (topic !== sensorTopic) return;
 
     try {
-      const payload = JSON.parse(message.toString());
-      const {
-        deviceId = 'ESP32_NODE_01',
-        gasLevel = 0,
-        flameDetected = false,
-      } = payload;
+      let rawPayload;
+      try {
+        rawPayload = JSON.parse(message.toString());
+      } catch (parseError) {
+        console.error('[MQTT] Rejected malformed JSON payload:', parseError.message);
+        return;
+      }
 
-      const numericGasLevel = Number(gasLevel);
-      const isFlameDetected = Boolean(flameDetected);
-      const isGasAlert = payload.gasAlert !== undefined ? Boolean(payload.gasAlert) : numericGasLevel >= gasThreshold;
-      const isFireAlert = payload.fireAlert !== undefined ? Boolean(payload.fireAlert) : isFlameDetected;
+      // 1. Defensively validate that payload is a non-null object (not array or primitive)
+      if (!rawPayload || typeof rawPayload !== 'object' || Array.isArray(rawPayload)) {
+        console.error('[MQTT] Rejected invalid payload format: must be a JSON object.');
+        return;
+      }
 
-      // 1. Persist sensor telemetry to MongoDB
+      // 2. Extract and validate deviceId
+      const rawDeviceId = typeof rawPayload.deviceId === 'string' ? rawPayload.deviceId.trim() : '';
+      const deviceId = rawDeviceId.length > 0 ? rawDeviceId : 'ESP32_NODE_01';
+
+      // 3. Validate gasLevel: must be present and parse to a valid non-negative number
+      if (rawPayload.gasLevel === undefined || rawPayload.gasLevel === null) {
+        console.error(`[MQTT] Rejected payload from ${deviceId}: missing required field "gasLevel".`);
+        return;
+      }
+
+      const numericGasLevel = Number(rawPayload.gasLevel);
+      if (isNaN(numericGasLevel) || numericGasLevel < 0) {
+        console.error(`[MQTT] Rejected payload from ${deviceId}: invalid "gasLevel" (${rawPayload.gasLevel}). Must be a non-negative number.`);
+        return;
+      }
+
+      // 4. Normalize flameDetected: robustly support boolean, numeric (1/0), and string values from ESP32
+      const isFlameDetected =
+        rawPayload.flameDetected === true ||
+        rawPayload.flameDetected === 1 ||
+        rawPayload.flameDetected === 'true' ||
+        rawPayload.flameDetected === '1';
+
+      // Compute or accept explicit alert flags
+      const isGasAlert = rawPayload.gasAlert !== undefined ? Boolean(rawPayload.gasAlert) : numericGasLevel >= gasThreshold;
+      const isFireAlert = rawPayload.fireAlert !== undefined ? Boolean(rawPayload.fireAlert) : isFlameDetected;
+
+      // 5. Persist sensor telemetry to MongoDB
       let savedLog = null;
       try {
         savedLog = await SensorLog.create({
@@ -63,9 +121,16 @@ const initMQTT = () => {
 
       const telemetryData = savedLog
         ? savedLog.toObject()
-        : { deviceId, gasLevel: numericGasLevel, flameDetected: isFlameDetected, gasAlert: isGasAlert, fireAlert: isFireAlert, timestamp: new Date() };
+        : {
+            deviceId,
+            gasLevel: numericGasLevel,
+            flameDetected: isFlameDetected,
+            gasAlert: isGasAlert,
+            fireAlert: isFireAlert,
+            timestamp: new Date(),
+          };
 
-      // 2. Broadcast sensor reading to real-time clients via Socket.IO
+      // 6. Broadcast sensor reading to real-time clients via Socket.IO
       try {
         const io = getIO();
         io.emit('sensor-data', telemetryData);
@@ -73,7 +138,7 @@ const initMQTT = () => {
         // Socket.IO not yet initialized or no listeners
       }
 
-      // 3. Evaluate safety hazard conditions & alert deduplication
+      // 7. Evaluate safety hazard conditions & alert deduplication
       const isGasBreach = numericGasLevel >= gasThreshold;
       const isHazardous = isGasBreach || isFlameDetected;
 
@@ -112,7 +177,15 @@ const initMQTT = () => {
 
         const alertData = savedAlert
           ? savedAlert.toObject()
-          : { deviceId, alertType, severity, gasLevel: numericGasLevel, flameDetected: isFlameDetected, message: messageText, timestamp: new Date() };
+          : {
+              deviceId,
+              alertType,
+              severity,
+              gasLevel: numericGasLevel,
+              flameDetected: isFlameDetected,
+              message: messageText,
+              timestamp: new Date(),
+            };
 
         // Real-time broadcast for urgent alerts
         try {
@@ -124,13 +197,19 @@ const initMQTT = () => {
 
         // Publish alert back to MQTT topic for ESP32 actuators / buzzers
         if (client && client.connected) {
-          client.publish(alertTopic, JSON.stringify(alertData));
+          client.publish(alertTopic, JSON.stringify(alertData), { qos: 0 }, (pubErr) => {
+            if (pubErr) {
+              console.error(`[MQTT] Failed to publish alert to ${alertTopic}:`, pubErr.message);
+            } else {
+              console.log(`[MQTT] Published hazard alert to ${alertTopic}: [${alertType}]`);
+            }
+          });
         }
 
         console.warn(`[HAZARD ALERT] ${alertType} - Severity: ${severity} - ${messageText}`);
       }
-    } catch (parseError) {
-      console.error('[MQTT] Failed to parse incoming JSON payload:', parseError.message);
+    } catch (err) {
+      console.error('[MQTT] Unexpected error processing sensor message:', err.message);
     }
   });
 
@@ -139,7 +218,16 @@ const initMQTT = () => {
 
 const getMQTTClient = () => client;
 
+const closeMQTT = () => {
+  if (client) {
+    console.log('[MQTT] Closing MQTT connection...');
+    client.end(true);
+    client = null;
+  }
+};
+
 module.exports = {
   initMQTT,
   getMQTTClient,
+  closeMQTT,
 };

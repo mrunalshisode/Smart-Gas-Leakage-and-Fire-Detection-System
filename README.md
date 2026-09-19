@@ -88,39 +88,123 @@ GAS_THRESHOLD_PPM=400
 
 ---
 
-## MQTT Integration (ESP32)
+## MQTT & IoT Communication (ESP32 Integration)
 
-### 1. Ingestion Topic: `iotap/sensor/data`
-The backend listens on `MQTT_TOPIC_SENSOR` for incoming JSON messages from the ESP32:
+The backend provides a high-performance, bidirectional MQTT integration designed for direct interfacing with ESP32 microcontroller nodes.
 
+### 1. MQTT Configuration (.env)
+
+| Environment Variable | Default Value | Purpose |
+| :--- | :--- | :--- |
+| `MQTT_BROKER_URL` | `mqtt://broker.hivemq.com:1883` | MQTT Broker connection URL |
+| `MQTT_TOPIC_SENSOR` | `iotap/sensor/data` | Ingestion topic for ESP32 sensor telemetry |
+| `MQTT_TOPIC_ALERT` | `iotap/sensor/alerts` | Publication topic for actuator & buzzer feedback |
+| `GAS_THRESHOLD_PPM` | `400` | Safety threshold for gas leakage alert |
+| `ALERT_COOLDOWN_SECONDS`| `60` | Cooldown period to suppress repetitive duplicate alerts |
+
+---
+
+### 2. Telemetry Ingestion Topic: `iotap/sensor/data`
+
+The ESP32 publishes sensor readings as JSON to `MQTT_TOPIC_SENSOR`.
+
+#### Ingestion Payload Format
 ```json
 {
   "deviceId": "ESP32_NODE_01",
   "gasLevel": 450,
-  "flameDetected": true
+  "flameDetected": false,
+  "gasAlert": true,
+  "fireAlert": false
 }
 ```
 
-### 2. Alert Topic: `iotap/sensor/alerts`
-When a hazard is triggered (gas exceeds `GAS_THRESHOLD_PPM` or flame is detected), the backend publishes an alert payload back to this topic (useful for activating an ESP32 buzzer, siren, or exhaust fan).
+#### Field Specifications:
+* **`deviceId`** *(string, optional, default: `"ESP32_NODE_01"`)*: Unique identifier of the hardware node.
+* **`gasLevel`** *(number, required)*: Gas sensor reading in PPM or calibrated ADC (e.g., MQ-2 output). Must be non-negative.
+* **`flameDetected`** *(boolean | number, required)*: State of the flame/IR sensor. Supports boolean (`true`/`false`), digital integers (`1`/`0`), or string representations (`"true"`/`"1"`).
+* **`gasAlert`** *(boolean, optional)*: Explicit gas alert flag. If omitted, backend evaluates `gasLevel >= GAS_THRESHOLD_PPM`.
+* **`fireAlert`** *(boolean, optional)*: Explicit fire alert flag. If omitted, defaults to `flameDetected`.
+
+#### Backend Ingestion Pipeline:
+1. **Validation & Normalization**: Validates JSON structure, rejects malformed/negative values, and normalizes ESP32 digital outputs.
+2. **MongoDB Storage**: Persists reading into `SensorLog` collection with timestamp.
+3. **Socket.IO Broadcast**: Emits live `sensor-data` event to all connected dashboard clients.
+4. **Hazard Evaluation**: Compares readings against safety thresholds and triggers incident alerts if hazardous.
 
 ---
 
-## Real-Time Events (Socket.IO)
+### 3. Alert Feedback Topic: `iotap/sensor/alerts`
 
-Clients connecting to Socket.IO can listen to:
-- **`sensor-data`**: Emitted whenever new sensor data arrives.
-- **`alert`**: Emitted immediately when gas leakage or fire is detected.
+When a hazard occurs, the backend publishes an alert payload back to `MQTT_TOPIC_ALERT` (`QoS 0`). The ESP32 subscribes to this topic to activate local actuators (e.g., piezobuzzer, alarm LEDs, exhaust fan relay).
+
+#### Alert Publication Payload Format
+```json
+{
+  "deviceId": "ESP32_NODE_01",
+  "alertType": "GAS_LEAK",
+  "severity": "HIGH",
+  "gasLevel": 580,
+  "flameDetected": false,
+  "message": "Gas leak warning! Gas level (580 PPM) exceeded threshold (400 PPM).",
+  "timestamp": "2026-09-19T05:08:43.123Z",
+  "_id": "6aae18cda8c6040bb7040157"
+}
+```
+
+#### Alert Types & Severity Matrix:
+| Hazard Condition | Alert Type | Severity | Default Action |
+| :--- | :--- | :--- | :--- |
+| `gasLevel >= 400` & `flame == false` | `GAS_LEAK` | `HIGH` | Buzzer beeps, yellow warning LED, exhaust fan ON |
+| `flameDetected == true` & `gas < 400` | `FIRE_DETECTED` | `CRITICAL` | Siren alarms, red strobe LED, emergency alert |
+| `gasLevel >= 400` & `flame == true` | `COMBINED_HAZARD` | `CRITICAL` | Continuous siren, solenoid gas cutoff valve |
 
 ---
 
-## REST API Endpoints
+### 4. Alert Cooldown & Deduplication Logic
+
+* **60-Second Cooldown**: If an active hazard continues, duplicate alerts are suppressed for 60 seconds to prevent alert flooding.
+* **Immediate Reset on Normal State**: When readings return to safe levels (`gasLevel < 400` and `flame == false`), the hazard state resets immediately. Any subsequent hazard will trigger an alert without waiting for cooldown.
+* **Per-Device Tracking**: Each hardware node (`deviceId`) is tracked independently in memory.
+
+---
+
+### 5. Hardware Integration Guide
+
+For full ESP32 circuit schematics, pin mappings (MQ-2, flame sensor, buzzer, relay), and a complete ready-to-flash Arduino C++ firmware sketch using `PubSubClient` and `ArduinoJson`, see **[MQTT_HARDWARE_INTEGRATION.md](./MQTT_HARDWARE_INTEGRATION.md)**.
+
+---
+
+### 6. Real-Time Events (Socket.IO)
+
+Connected frontend clients listen for:
+* **`sensor-data`**: Dispatched on every incoming telemetry packet.
+* **`alert`**: Dispatched immediately on hazard onset.
+
+---
+
+### 7. Automated Test Suites
+
+Run the following scripts to verify backend, MQTT, and real-time features:
+
+```bash
+# Run dedicated Member 2 MQTT Integration test suite
+npm run test:mqtt
+
+# Run comprehensive end-to-end backend readiness test suite (23 tests)
+npm run test:e2e
+```
+
+---
+
+### 8. REST API Endpoints
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `GET` | `/api/health` | Service health check |
+| `GET` | `/api/health` | Service health check & uptime |
 | `GET` | `/api/sensors/latest` | Retrieve the latest sensor reading |
-| `GET` | `/api/sensors/history?limit=50` | Retrieve past sensor readings |
-| `POST` | `/api/sensors` | Manually log sensor reading (for testing) |
-| `GET` | `/api/alerts?limit=20` | Retrieve recent alerts |
-| `GET` | `/api/alerts/latest` | Retrieve the single latest alert |
+| `GET` | `/api/sensors/history?limit=50` | Retrieve chronological sensor readings |
+| `POST` | `/api/sensors` | Manually log sensor reading |
+| `GET` | `/api/alerts?limit=20` | Retrieve recent alerts (supports `severity` & `alertType` filters) |
+| `GET` | `/api/alerts/latest` | Retrieve single most recent alert |
+

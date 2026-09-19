@@ -7,7 +7,7 @@ dotenv.config();
 const app = require('./app');
 const connectDB = require('./config/db');
 const { initSocket } = require('./config/socket');
-const { initMQTT } = require('./config/mqtt');
+const { initMQTT, closeMQTT } = require('./config/mqtt');
 
 const PORT = process.env.PORT || 5000;
 
@@ -57,6 +57,7 @@ startServer();
 // Graceful process shutdown handling
 process.on('SIGINT', () => {
   console.log('\n[Process] Gracefully shutting down server...');
+  closeMQTT();
   server.close(() => {
     console.log('[Process] HTTP server closed.');
     process.exit(0);
