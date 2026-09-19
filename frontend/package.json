@@ -1,0 +1,22 @@
+{
+  "name": "smart-gas-fire-dashboard",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "npm run build && vite preview --configLoader native --host 127.0.0.1 --port 5173",
+    "vite:dev": "vite --configLoader native",
+    "build": "vite build --configLoader native",
+    "preview": "vite preview --configLoader native"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.0.3",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "socket.io-client": "^4.8.3",
+    "vite": "^7.1.7"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.0"
+  }
+}
