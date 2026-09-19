@@ -5,7 +5,7 @@
     "expected": "HTTP 200, status: OK",
     "actual": "HTTP 200, status: OK",
     "status": "PASS",
-    "details": "Uptime: 13.085767s"
+    "details": "Uptime: 2406.3791145s"
   },
   {
     "category": "REST API",
@@ -83,7 +83,7 @@
     "category": "REST API",
     "testName": "GET /api/alerts/latest",
     "expected": "HTTP 200 with alert object",
-    "actual": "HTTP 200, alertType: GAS_LEAK",
+    "actual": "HTTP 200, alertType: COMBINED_HAZARD",
     "status": "PASS",
     "details": ""
   },
@@ -91,7 +91,7 @@
     "category": "REST API",
     "testName": "GET /api/alerts (Default History)",
     "expected": "HTTP 200 with alert list",
-    "actual": "HTTP 200, count: 7",
+    "actual": "HTTP 200, count: 20",
     "status": "PASS",
     "details": ""
   },
@@ -107,7 +107,7 @@
     "category": "REST API",
     "testName": "GET /api/alerts?severity=HIGH",
     "expected": "HTTP 200, all records have severity HIGH",
-    "actual": "HTTP 200, count: 5, all matched HIGH: true",
+    "actual": "HTTP 200, count: 18, all matched HIGH: true",
     "status": "PASS",
     "details": ""
   },
@@ -115,7 +115,7 @@
     "category": "REST API",
     "testName": "GET /api/alerts?alertType=GAS_LEAK",
     "expected": "HTTP 200, all records have alertType GAS_LEAK",
-    "actual": "HTTP 200, count: 5, all matched GAS_LEAK: true",
+    "actual": "HTTP 200, count: 18, all matched GAS_LEAK: true",
     "status": "PASS",
     "details": ""
   },
@@ -155,7 +155,7 @@
     "category": "Database Verification",
     "testName": "SensorLog Ingestion in MongoDB",
     "expected": "Latest MongoDB reading matches published telemetry (FINAL_RT_DEVICE, 620)",
-    "actual": "Saved in MongoDB with ID: 6aad52956721b0c881428a9e",
+    "actual": "Saved in MongoDB with ID: 6aae32f25efeefbe0ca978b7",
     "status": "PASS",
     "details": ""
   },
@@ -163,7 +163,7 @@
     "category": "Database Verification",
     "testName": "Alert Ingestion in MongoDB",
     "expected": "Latest MongoDB alert matches COMBINED_HAZARD for FINAL_RT_DEVICE",
-    "actual": "Saved in MongoDB with ID: 6aad52956721b0c881428a9f",
+    "actual": "Saved in MongoDB with ID: 6aae32f25efeefbe0ca978b8",
     "status": "PASS",
     "details": ""
   },
@@ -171,7 +171,7 @@
     "category": "Alert Cooldown",
     "testName": "Duplicate Alert Suppression During 60s Cooldown",
     "expected": "Alert count remains constant; duplicate is suppressed",
-    "actual": "Suppressed successfully (Count before: 1, Count after: 1)",
+    "actual": "Suppressed successfully (Count before: 7, Count after: 7)",
     "status": "PASS",
     "details": ""
   },
@@ -179,7 +179,7 @@
     "category": "Alert Cooldown",
     "testName": "Normal State Reset & New Incident Trigger",
     "expected": "Hazard returning after normal state immediately triggers a new alert",
-    "actual": "Triggered new alert on return (Previous count: 1, New count: 2)",
+    "actual": "Triggered new alert on return (Previous count: 7, New count: 8)",
     "status": "PASS",
     "details": ""
   }

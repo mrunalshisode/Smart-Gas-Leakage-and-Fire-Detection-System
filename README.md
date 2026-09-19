@@ -1,126 +1,140 @@
-# Smart Gas Leakage & Fire Detection System - Backend
+# IoTAP Smart Gas Leakage and Fire Detection System
 
-Backend service and database layer for the IoTAP project **Smart Gas Leakage and Fire Detection System**. Built with Node.js, Express, MongoDB (Mongoose), MQTT, and Socket.IO.
-
----
-
-## Features
-
-- **Modular Architecture**: Clean separation of configurations, models, controllers, and routes.
-- **ESP32 Ready via MQTT**: Ingests sensor telemetry (`gasLevel`, `flameDetected`, `deviceId`) published by ESP32 over MQTT.
-- **Automated Hazard Detection**: Detects gas leakage breaches and flame signals; immediately generates incident alerts.
-- **Real-Time Push via Socket.IO**: Broadcasts live telemetry and urgent alerts to web or mobile clients.
-- **REST API**: Endpoints to query the latest sensor status, historical logs, and alert logs.
-- **Configurable**: Fully managed with environment variables (`.env`).
+A complete full-stack IoT safety solution providing real-time telemetry, automated hazard evaluation, emergency actuation, and live web monitoring for industrial and residential environments.
 
 ---
 
-## Project Structure
+## Repository Architecture (Monorepo)
 
-```text
-backend/
-├── src/
-│   ├── config/
-│   │   ├── db.js             # MongoDB connection setup
-│   │   ├── mqtt.js           # MQTT client connection & incoming message handler
-│   │   └── socket.js         # Socket.IO initialization & real-time broadcast helper
-│   │
-│   ├── models/
-│   │   ├── SensorLog.js      # Schema for gas levels (PPM) & flame status
-│   │   └── Alert.js          # Schema for gas leak and fire incident records
-│   │
-│   ├── controllers/
-│   │   ├── sensorController.js # Logic for fetching latest/historical readings
-│   │   └── alertController.js  # Logic for fetching alerts
-│   │
-│   ├── routes/
-│   │   ├── sensorRoutes.js   # API routes: /api/sensors/latest, /history
-│   │   └── alertRoutes.js    # API routes: /api/alerts
-│   │
-│   ├── app.js                # Express app configuration & middleware
-│   └── server.js             # Main server entry point (HTTP + Socket.IO + MQTT)
-│
-├── .env                      # Local environment configuration
-├── .env.example              # Template for environment variables
-├── .gitignore
-└── package.json
+```
+Smart-Gas-Leakage-and-Fire-Detection-System/
+├── .gitignore                      # Root Git exclusion rules (.env, node_modules, dist)
+├── README.md                       # Full-Stack documentation and startup guide
+├── backend/                        # Node.js, Express, MQTT, Socket.IO, and MongoDB
+│   ├── .env.example                # Backend environment template
+│   ├── package.json
+│   ├── API_DOCUMENTATION.md        # Complete REST API reference
+│   ├── MQTT_HARDWARE_INTEGRATION.md# Hardware wiring and Arduino sketch
+│   ├── FINAL_BACKEND_TEST_REPORT.md# Test suite report and verification logs
+│   ├── scripts/                    # Automated testing & verification suites
+│   │   ├── runFinalReadinessSuite.js
+│   │   ├── testAlertCooldown.js
+│   │   ├── testAlertScenarios.js
+│   │   ├── testMqttIntegration.js
+│   │   ├── testMqttToSocketIO.js
+│   │   ├── testSocketClient.js
+│   │   ├── verifyUserScenarios.js
+│   │   └── finalTestResults.json
+│   └── src/                        # Core backend source
+│       ├── app.js                  # Express app and middleware
+│       ├── server.js               # HTTP, Socket.IO, and MQTT server entry
+│       ├── config/                 # DB, MQTT, and Socket.IO configuration
+│       ├── controllers/            # Sensor and Alert route controllers
+│       ├── models/                 # Mongoose schemas (SensorLog, Alert)
+│       ├── routes/                 # REST route definitions
+│       └── services/               # Hazard evaluation & alert deduplication
+└── frontend/                       # React 18, Vite, Socket.IO Client dashboard
+    ├── .env.example                # Frontend environment template
+    ├── package.json
+    ├── vite.config.js
+    ├── index.html
+    └── src/
+        ├── App.jsx                 # Dashboard root container
+        ├── main.jsx                # Application mounting
+        ├── styles.css              # Dashboard styling
+        ├── components/             # Reusable UI cards, charts, and tables
+        │   ├── ActiveAlertBanner.jsx
+        │   ├── AlertsPanel.jsx
+        │   ├── BuzzerControl.jsx
+        │   ├── ConnectivityStrip.jsx
+        │   ├── GasLineChart.jsx
+        │   ├── Header.jsx
+        │   ├── SafetyStatusCard.jsx
+        │   ├── SensorCard.jsx
+        │   ├── SensorHistoryTable.jsx
+        │   ├── SensorLineChart.jsx
+        │   ├── SystemOverview.jsx
+        │   └── TemperatureLineChart.jsx
+        └── services/
+            └── safetyDataService.js# Real REST and Socket.IO client service
 ```
 
 ---
 
-## Getting Started
+## Key Features
+
+* **Dual Hazard Detection**: Continuous monitoring of combustible/toxic gases (MQ-2 Sensor) and open flames (Optical Flame Sensor).
+* **Automated Safety Actuation**: Instant local activation of acoustic alarms (Buzzer) and exhaust ventilation (Fan).
+* **Alert Deduplication & Cooldown**: Smart 60-second cooldown suppression stops spam while state changes trigger instant emergency dispatching.
+* **Bi-directional Real-Time Communication**:
+  * Telemetry ingested from hardware via MQTT (`iotap/sensor/data`).
+  * Instant browser dispatching via WebSockets (`sensor-data` and `alert` events).
+  * Outbound actuator notifications published over MQTT (`iotap/sensor/alerts`).
+* **Zero Mock Telemetry**: Production-ready frontend connected directly to real REST endpoints and WebSocket feeds.
+
+---
+
+## Quickstart Guide
 
 ### 1. Prerequisites
-- **Node.js**: v18+ or higher
-- **MongoDB**: Local MongoDB instance (`mongodb://127.0.0.1:27017`) or MongoDB Atlas URI.
-- **MQTT Broker**: A local broker (like Mosquitto) or a public test broker (e.g., `mqtt://broker.hivemq.com:1883`).
+* Node.js (v18.0 or higher)
+* MongoDB (v6.0 or higher running locally at `mongodb://127.0.0.1:27017`)
+* MQTT Broker access (defaults to HiveMQ public broker: `broker.hivemq.com`)
 
-### 2. Install Dependencies
+### 2. Backend Setup
 ```bash
 cd backend
 npm install
-```
-
-### 3. Configure Environment Variables
-Copy `.env.example` to `.env` if not already created:
-```bash
 cp .env.example .env
-```
-Default `.env` settings:
-```env
-PORT=5000
-MONGO_URI=mongodb://127.0.0.1:27017/iotap_gas_fire_db
-MQTT_BROKER_URL=mqtt://broker.hivemq.com:1883
-MQTT_TOPIC_SENSOR=iotap/sensor/data
-MQTT_TOPIC_ALERT=iotap/sensor/alerts
-GAS_THRESHOLD_PPM=400
+npm start
+# Server listens on http://localhost:5000
 ```
 
-### 4. Run the Server
-- **Development mode** (with auto-reload via `nodemon`):
-  ```bash
-  npm run dev
-  ```
-- **Production mode**:
-  ```bash
-  npm start
-  ```
+### 3. Frontend Setup
+```bash
+cd frontend
+npm install
+cp .env.example .env
+npm run dev
+# Dashboard launches on http://localhost:5173
+```
 
 ---
 
-## MQTT Integration (ESP32)
+## Testing & Verification
 
-### 1. Ingestion Topic: `iotap/sensor/data`
-The backend listens on `MQTT_TOPIC_SENSOR` for incoming JSON messages from the ESP32:
+Run the automated backend test suites from the `backend/` directory:
 
-```json
-{
-  "deviceId": "ESP32_NODE_01",
-  "gasLevel": 450,
-  "flameDetected": true
-}
+```bash
+# 1. Full Backend Readiness Test Suite (23 automated checks)
+node scripts/runFinalReadinessSuite.js
+
+# 2. MQTT & IoT Integration Test Suite (11 automated checks)
+node scripts/testMqttIntegration.js
+
+# 3. User Scenarios Test (Normal, Gas Leak, Fire, Cooldown, Socket.IO)
+node scripts/verifyUserScenarios.js
 ```
 
-### 2. Alert Topic: `iotap/sensor/alerts`
-When a hazard is triggered (gas exceeds `GAS_THRESHOLD_PPM` or flame is detected), the backend publishes an alert payload back to this topic (useful for activating an ESP32 buzzer, siren, or exhaust fan).
+Build the frontend bundle:
+```bash
+cd frontend
+npm run build
+```
 
 ---
 
-## Real-Time Events (Socket.IO)
+## Hazard State Matrix
 
-Clients connecting to Socket.IO can listen to:
-- **`sensor-data`**: Emitted whenever new sensor data arrives.
-- **`alert`**: Emitted immediately when gas leakage or fire is detected.
+| State | Gas PPM | Flame | Buzzer | Exhaust Fan | Alert Severity |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **NORMAL** | `< 400` | `false` | OFF | OFF | Safe |
+| **GAS_LEAK** | `≥ 400` | `false` | ON | ON | HIGH |
+| **FIRE_DETECTED** | Any | `true` | ON | OFF | CRITICAL |
+| **COMBINED_HAZARD**| `≥ 400` | `true` | ON | ON | CRITICAL |
 
 ---
 
-## REST API Endpoints
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/health` | Service health check |
-| `GET` | `/api/sensors/latest` | Retrieve the latest sensor reading |
-| `GET` | `/api/sensors/history?limit=50` | Retrieve past sensor readings |
-| `POST` | `/api/sensors` | Manually log sensor reading (for testing) |
-| `GET` | `/api/alerts?limit=20` | Retrieve recent alerts |
-| `GET` | `/api/alerts/latest` | Retrieve the single latest alert |
+## Team & Authors
+* **Member 2 — Backend, MQTT & IoT Communication**: Mrunal Shisode
+* **Frontend Dashboard**: Zara Shaikh & Team
