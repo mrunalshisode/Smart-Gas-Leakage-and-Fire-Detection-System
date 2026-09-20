@@ -8,8 +8,8 @@ const overviewItems = [
     text: 'Detects direct flame or strong fire radiation and changes the status to fire alert.',
   },
   {
-    title: 'Temperature Sensor',
-    text: 'Tracks heat near the device. Sudden increase supports fire or overheating detection.',
+    title: 'ESP32 Microcontroller',
+    text: 'Processes ADC inputs, executes threshold evaluation, and streams telemetry via MQTT.',
   },
   {
     title: 'Buzzer and LED',

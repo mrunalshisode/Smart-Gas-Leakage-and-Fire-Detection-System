@@ -3,9 +3,9 @@ import React from 'react';
 /**
  * Clean & Polished DashboardPage:
  * - Clear Safety Status Banner (understandable in <3 seconds)
- * - Exactly 4 compact metric cards (Gas Level, Flame Sensor, Temperature, Device Link)
+ * - Exactly 3 compact metric cards (Gas Level, Flame Sensor, Device Link)
  * - Balanced 2-Column layout:
- *     Left: Gas Level Trend (SVG with 400 PPM threshold, clean area fill) + Thermal status notice
+ *     Left: Gas Level Telemetry (SVG with 400 PPM threshold, clean area fill)
  *     Right: Recent Safety Alerts (3 compact rows) + System Infrastructure chips
  * - Direct navigation action buttons to deep-dive pages.
  */
@@ -21,7 +21,6 @@ export default function DashboardPage({
 
   const gas = Number(current.gasLevel ?? current.gasValue ?? 0);
   const isFlame = Boolean(current.flameDetected);
-  const temp = current.temperature;
   const isOnline = Boolean(connection.isOnline);
   const buzzerOn = Boolean(current.buzzerOn);
   const ledOn = Boolean(current.ledOn);
@@ -89,7 +88,7 @@ export default function DashboardPage({
 
   const banner = getBannerConfig(status);
 
-  // 4 Compact Summary Cards
+  // 3 Compact Summary Cards
   const summaryCards = [
     {
       id: 'gas',
@@ -112,18 +111,6 @@ export default function DashboardPage({
       icon: (
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
-        </svg>
-      ),
-    },
-    {
-      id: 'temperature',
-      label: 'Temperature',
-      value: temp !== null && temp !== undefined ? `${temp.toFixed(1)} °C` : 'Unavailable',
-      statusText: temp !== null && temp !== undefined ? 'Ambient thermal reading' : 'No sensor connected',
-      tone: temp !== null && temp !== undefined ? (temp >= 38 ? 'danger' : temp >= 32 ? 'warning' : 'safe') : 'neutral',
-      icon: (
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" />
         </svg>
       ),
     },
@@ -153,10 +140,10 @@ export default function DashboardPage({
   // Compact Gas SVG Chart Calculation
   const recentGas = gasTrend.slice(-12);
   const chartW = 540;
-  const chartH = 150;
+  const chartH = 200;
   const padLeft = 36;
   const padRight = 16;
-  const padTop = 16;
+  const padTop = 18;
   const padBottom = 26;
 
   const maxPpm = Math.max(600, ...recentGas.map((d) => Number(d.value) || 0));
@@ -224,13 +211,6 @@ export default function DashboardPage({
           </div>
 
           <div className="quick-stat-item">
-            <span className="qs-label">Temperature</span>
-            <span className="qs-value">
-              {temp !== null && temp !== undefined ? `${temp.toFixed(1)} °C` : <span className="text-muted">Unavailable</span>}
-            </span>
-          </div>
-
-          <div className="quick-stat-item">
             <span className="qs-label">Device Link</span>
             <span className={`qs-value ${isOnline ? 'text-safe' : 'text-offline'}`}>
               {isOnline ? 'ONLINE' : 'OFFLINE'}
@@ -239,9 +219,9 @@ export default function DashboardPage({
         </div>
       </section>
 
-      {/* 2. Sensor Summary (Exactly 4 Compact Cards) */}
+      {/* 2. Sensor Summary (3 Compact Cards) */}
       <section className="summary-cards-section" aria-label="Summary Metric Cards">
-        <div className="cards-grid-four">
+        <div className="cards-grid-three">
           {summaryCards.map((card) => (
             <div key={card.id} className={`metric-card-compact tone-${card.tone}`}>
               <div className="card-header-row">
@@ -352,30 +332,6 @@ export default function DashboardPage({
                   })}
                 </svg>
               )}
-            </div>
-          </div>
-
-          {/* Compact Thermal Sensor Notice */}
-          <div className="content-panel thermal-panel-compact">
-            <div className="thermal-compact-row">
-              <div className="thermal-compact-icon">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" />
-                </svg>
-              </div>
-              <div className="thermal-compact-info">
-                <span className="thermal-info-title">
-                  {temp !== null && temp !== undefined ? `Ambient Temperature: ${temp.toFixed(1)} °C` : 'Temperature Data Unavailable'}
-                </span>
-                <span className="thermal-info-desc">
-                  {temp !== null && temp !== undefined
-                    ? 'Ambient thermal reading within safe range.'
-                    : 'ESP32 node is operating with MQ-2 Gas and IR Flame sensors.'}
-                </span>
-              </div>
-              <span className={`badge badge-sm ${temp !== null && temp !== undefined ? 'badge-safe' : 'badge-neutral'}`}>
-                {temp !== null && temp !== undefined ? 'Connected' : 'Unavailable'}
-              </span>
             </div>
           </div>
         </div>

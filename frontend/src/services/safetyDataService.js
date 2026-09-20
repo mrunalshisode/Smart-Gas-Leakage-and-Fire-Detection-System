@@ -199,12 +199,11 @@ export function exportHistoryToCSV(history) {
     return;
   }
 
-  const headers = ['Time', 'Device ID', 'Gas Level (PPM)', 'Temperature (C)', 'Flame Sensor', 'System Status'];
+  const headers = ['Time', 'Device ID', 'Gas Level (PPM)', 'Flame Sensor', 'System Status'];
   const rows = history.map((item) => [
     `"${item.time || ''}"`,
     `"${item.deviceId || 'ESP32'}"`,
     item.gasLevel ?? item.gasValue ?? 0,
-    item.temperature !== null && item.temperature !== undefined ? `${item.temperature} C` : 'Unavailable',
     `"${item.flameStatus || 'No Flame'}"`,
     `"${item.systemStatus || 'SAFE'}"`,
   ]);

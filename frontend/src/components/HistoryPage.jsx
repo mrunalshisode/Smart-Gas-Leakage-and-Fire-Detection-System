@@ -151,7 +151,6 @@ export default function HistoryPage({ history = [] }) {
                   <th>Timestamp</th>
                   <th>Device ID</th>
                   <th>Gas Level (PPM)</th>
-                  <th>Temperature</th>
                   <th>Flame Sensor</th>
                   <th>System Status</th>
                 </tr>
@@ -159,7 +158,6 @@ export default function HistoryPage({ history = [] }) {
               <tbody>
                 {paginatedRows.map((row, idx) => {
                   const gas = row.gasLevel ?? row.gasValue ?? 0;
-                  const temp = row.temperature;
                   const isFlame = row.flameStatus === 'Flame Detected' || row.flameDetected;
                   const statusText = row.systemStatus || 'SYSTEM SAFE';
 
@@ -175,13 +173,6 @@ export default function HistoryPage({ history = [] }) {
                         <span className={gas >= 400 ? 'text-danger font-bold' : 'text-safe font-semibold'}>
                           {gas} <small>PPM</small>
                         </span>
-                      </td>
-                      <td className="temp-cell font-mono">
-                        {temp !== null && temp !== undefined ? (
-                          <span>{Number(temp).toFixed(1)} °C</span>
-                        ) : (
-                          <span className="text-muted">Unavailable</span>
-                        )}
                       </td>
                       <td className="flame-cell">
                         <span className={`badge badge-sm ${isFlame ? 'badge-danger' : 'badge-neutral'}`}>

@@ -6,7 +6,6 @@ import React from 'react';
  * - Group 1: Infrastructure & Network Health (ESP32, Wi-Fi, MQTT, Backend, Socket.IO, MongoDB)
  * - Group 2: Hardware Components & Transducers (MQ-2, Flame Sensor, ESP32 MCU, Buzzer, LED)
  * - Short, readable descriptions without long paragraphs
- * - Clean temperature unavailable notice banner
  */
 export default function SystemPage({
   dashboardData,
@@ -213,15 +212,6 @@ export default function SystemPage({
         <div className="uptime-card-badge">
           <span className="uptime-label">Uptime:</span>
           <span className="uptime-val">{dashboardData?.uptime || '00:00:00'}</span>
-        </div>
-      </div>
-
-      {/* Temperature Notice Banner */}
-      <div className="temperature-notice-banner">
-        <span className="notice-icon">ℹ️</span>
-        <div className="notice-content">
-          <strong>Temperature data unavailable:</strong>
-          <span> The ESP32 edge station is operating with MQ-2 Gas and IR Flame sensors. No physical temperature thermistor is connected in this hardware build.</span>
         </div>
       </div>
 

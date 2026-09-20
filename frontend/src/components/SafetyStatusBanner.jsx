@@ -1,7 +1,6 @@
 function SafetyStatusBanner({ status, reading, connection }) {
   const isFlame = Boolean(reading?.flameDetected);
   const gas = Number(reading?.gasLevel ?? reading?.gasValue ?? 0);
-  const temp = reading?.temperature;
   const isOnline = Boolean(connection?.isOnline);
 
   // Status configuration matrix with explicit recommended actions
@@ -98,13 +97,6 @@ function SafetyStatusBanner({ status, reading, connection }) {
             <span className="qm-label">Flame Sensor</span>
             <span className={`qm-val ${isFlame ? 'text-danger' : 'text-safe'}`}>
               {isFlame ? 'DETECTED' : 'CLEAR'}
-            </span>
-          </div>
-
-          <div className="quick-metric">
-            <span className="qm-label">Temperature</span>
-            <span className="qm-val">
-              {temp !== null && temp !== undefined ? `${temp.toFixed(1)} °C` : <span className="text-muted">Unavailable</span>}
             </span>
           </div>
 

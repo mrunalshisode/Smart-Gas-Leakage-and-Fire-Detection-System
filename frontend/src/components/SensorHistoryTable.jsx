@@ -14,7 +14,6 @@ function SensorHistoryTable({ rows }) {
             <tr>
               <th>Time</th>
               <th>Gas Level</th>
-              <th>Temperature</th>
               <th>Flame Status</th>
               <th>System Status</th>
             </tr>
@@ -27,7 +26,6 @@ function SensorHistoryTable({ rows }) {
                 <tr key={`${row.time}-${gas}-${idx}`}>
                   <td>{row.time}</td>
                   <td>{gas} ppm</td>
-                  <td>{typeof row.temperature === 'number' ? `${row.temperature.toFixed(1)} C` : '28.0 C'}</td>
                   <td>{row.flameStatus}</td>
                   <td>
                     <span className={`table-status ${status.toLowerCase().replaceAll(' ', '-')}`}>

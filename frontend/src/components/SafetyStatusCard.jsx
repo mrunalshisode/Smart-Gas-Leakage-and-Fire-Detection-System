@@ -38,10 +38,6 @@ function SafetyStatusCard({ status, reading }) {
           <strong>{gas} ppm</strong>
         </div>
         <div>
-          <span>Temperature</span>
-          <strong>{typeof reading?.temperature === 'number' ? `${reading.temperature.toFixed(1)} C` : '28.0 C'}</strong>
-        </div>
-        <div>
           <span>Flame</span>
           <strong>{reading?.flameDetected ? 'Detected' : 'Clear'}</strong>
         </div>

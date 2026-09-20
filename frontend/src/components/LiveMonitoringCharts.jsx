@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 
-function LiveMonitoringCharts({ gasTrend, temperatureTrend }) {
+function LiveMonitoringCharts({ gasTrend }) {
   const [timeRange, setTimeRange] = useState('all'); // '5m', '15m', '1h', 'all'
 
   // Filter data points based on time range
@@ -11,16 +11,6 @@ function LiveMonitoringCharts({ gasTrend, temperatureTrend }) {
     if (timeRange === '1h') return gasTrend.slice(-30);
     return gasTrend;
   }, [gasTrend, timeRange]);
-
-  const filteredTempData = useMemo(() => {
-    if (!temperatureTrend || temperatureTrend.length === 0) return [];
-    if (timeRange === '5m') return temperatureTrend.slice(-10);
-    if (timeRange === '15m') return temperatureTrend.slice(-20);
-    if (timeRange === '1h') return temperatureTrend.slice(-30);
-    return temperatureTrend;
-  }, [temperatureTrend, timeRange]);
-
-  const hasTemperatureData = filteredTempData.length > 0;
 
   // Chart configuration
   const width = 640;
@@ -46,20 +36,7 @@ function LiveMonitoringCharts({ gasTrend, temperatureTrend }) {
     ? `${gasPath} L ${gasPoints[gasPoints.length - 1].x.toFixed(1)} ${height - padding} L ${gasPoints[0].x.toFixed(1)} ${height - padding} Z`
     : '';
 
-  // Calculate SVG line points for temperature
-  const tempMax = Math.max(50, ...(filteredTempData.map((d) => Number(d.value) || 0)));
-  const tempStep = filteredTempData.length > 1 ? (width - padding * 2) / (filteredTempData.length - 1) : width - padding * 2;
 
-  const tempPoints = filteredTempData.map((d, index) => {
-    const val = Number(d.value) || 0;
-    const x = padding + index * tempStep;
-    const y = height - padding - (val / tempMax) * (height - padding * 2);
-    return { ...d, value: val, x, y };
-  });
-
-  const tempPath = tempPoints.length > 0
-    ? tempPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
-    : '';
 
   // Generate sparse x-axis labels to avoid label overcrowding
   const labelInterval = Math.max(1, Math.ceil(filteredGasData.length / 6));
@@ -159,71 +136,6 @@ function LiveMonitoringCharts({ gasTrend, temperatureTrend }) {
                   </g>
                 ))}
               </svg>
-            )}
-          </div>
-        </article>
-
-        {/* Temperature Chart or Graceful Unavailable Card */}
-        <article className="chart-card">
-          <div className="chart-card-header">
-            <div>
-              <h3 className="chart-title">Thermal Monitoring</h3>
-              <p className="chart-sub">Hardware sensor telemetry</p>
-            </div>
-            {hasTemperatureData && (
-              <div className="chart-badges">
-                <span className="legend-indicator temp-legend">Temp (°C)</span>
-                <span className="threshold-legend warning">Heat Alert: 38°C</span>
-              </div>
-            )}
-          </div>
-
-          <div className="svg-container">
-            {hasTemperatureData ? (
-              <svg viewBox={`0 0 ${width} ${height}`} className="sensor-svg-chart" role="img" aria-label="Temperature live chart">
-                <defs>
-                  <linearGradient id="tempFillGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.0" />
-                  </linearGradient>
-                </defs>
-
-                {[0, 15, 30, 45].map((tick) => {
-                  const y = height - padding - (tick / tempMax) * (height - padding * 2);
-                  return (
-                    <g key={tick}>
-                      <line x1={padding} y1={y} x2={width - padding} y2={y} className="svg-grid-line" />
-                      <text x={padding - 8} y={y + 4} className="svg-axis-text" textAnchor="end">{tick}°</text>
-                    </g>
-                  );
-                })}
-
-                <path d={tempPath} className="svg-data-path temp-stroke" />
-
-                {tempPoints.map((pt, idx) => (
-                  <g key={`${pt.time}-${idx}`}>
-                    <circle cx={pt.x} cy={pt.y} r="3" className="svg-data-point temp" />
-                    {idx % labelInterval === 0 && (
-                      <text x={pt.x} y={height - 10} className="svg-axis-text" textAnchor="middle">
-                        {pt.time}
-                      </text>
-                    )}
-                  </g>
-                ))}
-              </svg>
-            ) : (
-              <div className="temp-unavailable-banner">
-                <div className="temp-unavailable-icon">🌡️</div>
-                <div className="temp-unavailable-content">
-                  <h4>Temperature Sensor Data Unavailable</h4>
-                  <p>
-                    The physical ESP32 node is currently running the primary <strong>MQ-2 Gas Leakage</strong> and <strong>IR Optical Flame</strong> sensor channels.
-                  </p>
-                  <span className="temp-notice-pill">
-                    System actively safeguarding gas and flame hazards
-                  </span>
-                </div>
-              </div>
             )}
           </div>
         </article>

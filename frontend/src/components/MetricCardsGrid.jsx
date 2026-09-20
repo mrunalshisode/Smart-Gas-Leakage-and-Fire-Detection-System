@@ -2,7 +2,6 @@ function MetricCardsGrid({ reading, current, connection }) {
   const activeReading = reading || current;
   const gas = Number(activeReading?.gasLevel ?? activeReading?.gasValue ?? 0);
   const isFlame = Boolean(activeReading?.flameDetected);
-  const temp = activeReading?.temperature;
   const buzzerOn = Boolean(activeReading?.buzzerOn);
   const ledOn = Boolean(activeReading?.ledOn);
   const isOnline = Boolean(connection?.isOnline);
@@ -18,14 +17,6 @@ function MetricCardsGrid({ reading, current, connection }) {
     ? { tone: 'danger', label: 'Fire Detected', desc: 'Optical flame sensor active' }
     : { tone: 'safe', label: 'No Flame', desc: 'No fire infrared detected' };
 
-  const tempStatus =
-    temp !== null && temp !== undefined
-      ? temp >= 38
-        ? { tone: 'danger', label: 'High Heat', desc: 'Temperature above safe range' }
-        : temp >= 32
-        ? { tone: 'warning', label: 'Warm', desc: 'Slightly elevated ambient heat' }
-        : { tone: 'safe', label: 'Normal', desc: 'Ambient temperature is normal' }
-      : { tone: 'neutral', label: 'Unavailable', desc: 'Sensor module not connected' };
 
   const buzzerStatus = buzzerOn
     ? { tone: 'danger', label: 'ALARM ACTIVE', desc: 'Acoustic buzzer sounder triggered' }
@@ -65,19 +56,6 @@ function MetricCardsGrid({ reading, current, connection }) {
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 00-1.925 3.546 5.974 5.974 0 01-2.133-1A3.75 3.75 0 0012 18z" />
-        </svg>
-      ),
-    },
-    {
-      id: 'temperature',
-      title: 'Temperature',
-      value: temp !== null && temp !== undefined ? `${temp.toFixed(1)} °C` : 'Unavailable',
-      badge: tempStatus.label,
-      desc: tempStatus.desc,
-      tone: tempStatus.tone,
-      icon: (
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m0 0a3 3 0 100 6 3 3 0 000-6zm0-15a3 3 0 00-3 3v8.586a5 5 0 106 0V3a3 3 0 00-3-3z" />
         </svg>
       ),
     },

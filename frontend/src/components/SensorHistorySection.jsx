@@ -56,7 +56,6 @@ function SensorHistorySection({ rows = [] }) {
                   <th>Timestamp</th>
                   <th>Device Node</th>
                   <th>Gas Concentration</th>
-                  <th>Temperature</th>
                   <th>Flame Sensor</th>
                   <th>Safety Status</th>
                 </tr>
@@ -83,13 +82,6 @@ function SensorHistorySection({ rows = [] }) {
                         <strong className={gas >= 400 ? 'text-danger' : 'text-navy'}>
                           {gas} PPM
                         </strong>
-                      </td>
-                      <td className="cell-temp">
-                        {row.temperature !== null && row.temperature !== undefined ? (
-                          `${row.temperature.toFixed(1)} °C`
-                        ) : (
-                          <span className="text-muted">Unavailable</span>
-                        )}
                       </td>
                       <td className="cell-flame">
                         <span className={`flame-indicator ${isFlame ? 'flame-active' : 'flame-clear'}`}>

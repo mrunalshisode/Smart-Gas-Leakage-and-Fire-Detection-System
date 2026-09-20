@@ -2,12 +2,11 @@ import React, { useState, useMemo } from 'react';
 
 /**
  * LiveMonitoringPage focuses purely on real-time sensor streams:
- * - 4 aligned telemetry cards
+ * - 4 aligned telemetry cards (Gas, Threshold, Flame, Sync)
  * - Professional SVG Gas Chart with subtle teal area fill (never black),
  *   clearly labeled 400 PPM threshold, readable Y-axis, non-overlapping timestamps,
  *   and interactive hover tooltips
  * - Time window buttons: Last 5m, Last 15m, Last 1h, All Data
- * - Honest thermal sensor status callout
  */
 export default function LiveMonitoringPage({
   dashboardData,
@@ -20,7 +19,6 @@ export default function LiveMonitoringPage({
   const gasTrend = dashboardData?.gasTrend || [];
   const gas = Number(current.gasLevel ?? current.gasValue ?? 0);
   const isFlame = Boolean(current.flameDetected);
-  const temp = current.temperature;
   const isOnline = Boolean(connection.isOnline);
   const lastUpdated = connection.lastUpdated || '--';
   const lastUpdatedFull = connection.lastUpdatedFull || '--';
@@ -262,32 +260,6 @@ export default function LiveMonitoringPage({
               )}
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Thermal Telemetry Strip */}
-      <div className="thermal-monitoring-strip">
-        <div className="thermal-strip-icon">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" />
-          </svg>
-        </div>
-        <div className="thermal-strip-content">
-          <h4 className="thermal-strip-title">
-            {temp !== null && temp !== undefined
-              ? `Ambient Temperature: ${temp.toFixed(1)} °C`
-              : 'Temperature Sensor Data Unavailable'}
-          </h4>
-          <p className="thermal-strip-desc">
-            {temp !== null && temp !== undefined
-              ? 'Ambient temperature recorded from attached thermistor. Operating in safe nominal range.'
-              : 'No physical DHT or thermistor module is attached to this ESP32 station. Gas and flame detection remain fully active.'}
-          </p>
-        </div>
-        <div className="thermal-strip-badge">
-          <span className={`badge ${temp !== null && temp !== undefined ? 'badge-safe' : 'badge-neutral'}`}>
-            {temp !== null && temp !== undefined ? 'Connected' : 'Unavailable'}
-          </span>
         </div>
       </div>
     </div>
