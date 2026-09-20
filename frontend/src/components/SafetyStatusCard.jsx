@@ -15,11 +15,16 @@ const statusCopy = {
     title: 'FIRE DETECTED',
     detail: 'Flame sensor is active. Evacuate and trigger emergency response.',
   },
+  'COMBINED HAZARD': {
+    title: 'COMBINED HAZARD',
+    detail: 'Simultaneous gas leak and fire detected! Evacuate immediately!',
+  },
 };
 
 function SafetyStatusCard({ status, reading }) {
   const copy = statusCopy[status] ?? statusCopy.SAFE;
-  const statusClass = status.toLowerCase().replaceAll(' ', '-');
+  const statusClass = (status || 'SAFE').toLowerCase().replaceAll(' ', '-');
+  const gas = reading?.gasLevel ?? reading?.gasValue ?? 0;
 
   return (
     <article className={`safety-card ${statusClass}`} aria-live="polite">
@@ -30,15 +35,11 @@ function SafetyStatusCard({ status, reading }) {
       <div className="status-metrics">
         <div>
           <span>Gas</span>
-          <strong>{reading.gasLevel} ppm</strong>
-        </div>
-        <div>
-          <span>Temperature</span>
-          <strong>{typeof reading?.temperature === 'number' ? `${reading.temperature.toFixed(1)} C` : '28.0 C'}</strong>
+          <strong>{gas} ppm</strong>
         </div>
         <div>
           <span>Flame</span>
-          <strong>{reading.flameDetected ? 'Detected' : 'Clear'}</strong>
+          <strong>{reading?.flameDetected ? 'Detected' : 'Clear'}</strong>
         </div>
       </div>
     </article>

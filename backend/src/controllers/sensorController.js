@@ -14,9 +14,11 @@ const getLatestReading = async (req, res) => {
       });
     }
 
+    const data = latest.toObject();
+    data.gasValue = data.gasLevel; // alias for frontend compatibility
     return res.status(200).json({
       success: true,
-      data: latest,
+      data,
     });
   } catch (error) {
     return res.status(500).json({
@@ -36,10 +38,16 @@ const getSensorHistory = async (req, res) => {
       .sort({ timestamp: -1 })
       .limit(limit);
 
+    const data = history.map((item) => {
+      const obj = item.toObject();
+      obj.gasValue = obj.gasLevel;
+      return obj;
+    });
+
     return res.status(200).json({
       success: true,
-      count: history.length,
-      data: history,
+      count: data.length,
+      data,
     });
   } catch (error) {
     return res.status(500).json({
@@ -54,16 +62,17 @@ const getSensorHistory = async (req, res) => {
 // Optional endpoint to manually log a sensor reading for testing/development
 const createSensorReading = async (req, res) => {
   try {
-    const { deviceId, gasLevel, flameDetected, gasAlert, fireAlert } = req.body;
+    const { deviceId, gasLevel, gasValue, flameDetected, gasAlert, fireAlert } = req.body;
 
-    if (gasLevel === undefined || gasLevel === null) {
+    const rawGas = gasLevel !== undefined && gasLevel !== null ? gasLevel : gasValue;
+    if (rawGas === undefined || rawGas === null) {
       return res.status(400).json({
         success: false,
-        message: 'gasLevel is required',
+        message: 'gasLevel or gasValue is required',
       });
     }
 
-    const numericGas = Number(gasLevel);
+    const numericGas = Number(rawGas);
     const isFlame = Boolean(flameDetected);
     const gasThreshold = Number(process.env.GAS_THRESHOLD_PPM) || 400;
     const isGasAlert = gasAlert !== undefined ? Boolean(gasAlert) : numericGas >= gasThreshold;
@@ -78,17 +87,20 @@ const createSensorReading = async (req, res) => {
       timestamp: new Date(),
     });
 
+    const readingObj = newReading.toObject();
+    readingObj.gasValue = numericGas;
+
     // Broadcast via Socket.IO
     try {
       const io = getIO();
-      io.emit('sensor-data', newReading);
+      io.emit('sensor-data', readingObj);
     } catch (socketErr) {
       // Socket not ready or ignored
     }
 
     return res.status(201).json({
       success: true,
-      data: newReading,
+      data: readingObj,
     });
   } catch (error) {
     return res.status(500).json({

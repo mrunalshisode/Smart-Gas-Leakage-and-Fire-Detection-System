@@ -12,13 +12,18 @@ function SensorLineChart({
   const width = 720;
   const height = 270;
   const padding = 36;
-  const chartMax = Math.max(maxValue, ...data.map((item) => item.value));
-  const xStep = (width - padding * 2) / Math.max(data.length - 1, 1);
+  const validData = Array.isArray(data) ? data : [];
+  const chartMax = Math.max(
+    maxValue || 800,
+    ...(validData.length > 0 ? validData.map((item) => Number(item.value) || 0) : [maxValue || 800])
+  );
+  const xStep = (width - padding * 2) / Math.max(validData.length - 1, 1);
 
-  const points = data.map((item, index) => {
+  const points = validData.map((item, index) => {
+    const val = Number(item.value) || 0;
     const x = padding + index * xStep;
-    const y = height - padding - (item.value / chartMax) * (height - padding * 2);
-    return { ...item, x, y };
+    const y = height - padding - (val / chartMax) * (height - padding * 2);
+    return { ...item, value: val, x, y };
   });
 
   const path = points
@@ -69,8 +74,8 @@ function SensorLineChart({
 
           <path d={path} className={lineClass} style={{ stroke: `url("#${gradientId}")` }} />
 
-          {points.map((point) => (
-            <g key={`${point.time}-${point.value}`}>
+          {points.map((point, idx) => (
+            <g key={`${point.time}-${point.value}-${idx}`}>
               <circle cx={point.x} cy={point.y} r="5" className="chart-point" />
               <text x={point.x} y={height - 10} className="axis-label" textAnchor="middle">
                 {point.time}

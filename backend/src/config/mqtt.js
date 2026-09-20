@@ -81,15 +81,20 @@ const initMQTT = () => {
       const rawDeviceId = typeof rawPayload.deviceId === 'string' ? rawPayload.deviceId.trim() : '';
       const deviceId = rawDeviceId.length > 0 ? rawDeviceId : 'ESP32_NODE_01';
 
-      // 3. Validate gasLevel: must be present and parse to a valid non-negative number
-      if (rawPayload.gasLevel === undefined || rawPayload.gasLevel === null) {
-        console.error(`[MQTT] Rejected payload from ${deviceId}: missing required field "gasLevel".`);
+      // 3. Validate gasLevel: support both gasLevel and gasValue from ESP32 hardware
+      const rawGas =
+        rawPayload.gasLevel !== undefined && rawPayload.gasLevel !== null
+          ? rawPayload.gasLevel
+          : rawPayload.gasValue;
+
+      if (rawGas === undefined || rawGas === null) {
+        console.error(`[MQTT] Rejected payload from ${deviceId}: missing required field "gasLevel" or "gasValue".`);
         return;
       }
 
-      const numericGasLevel = Number(rawPayload.gasLevel);
+      const numericGasLevel = Number(rawGas);
       if (isNaN(numericGasLevel) || numericGasLevel < 0) {
-        console.error(`[MQTT] Rejected payload from ${deviceId}: invalid "gasLevel" (${rawPayload.gasLevel}). Must be a non-negative number.`);
+        console.error(`[MQTT] Rejected payload from ${deviceId}: invalid gas level (${rawGas}). Must be a non-negative number.`);
         return;
       }
 
@@ -119,7 +124,7 @@ const initMQTT = () => {
         console.error('[MQTT/DB] Failed to save sensor log to database:', dbError.message);
       }
 
-      const telemetryData = savedLog
+      const baseTelemetry = savedLog
         ? savedLog.toObject()
         : {
             deviceId,
@@ -129,6 +134,11 @@ const initMQTT = () => {
             fireAlert: isFireAlert,
             timestamp: new Date(),
           };
+
+      const telemetryData = {
+        ...baseTelemetry,
+        gasValue: numericGasLevel, // include alias for frontend
+      };
 
       // 6. Broadcast sensor reading to real-time clients via Socket.IO
       try {
