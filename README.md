@@ -133,8 +133,3 @@ npm run build
 | **FIRE_DETECTED** | Any | `true` | ON | OFF | CRITICAL |
 | **COMBINED_HAZARD**| `≥ 400` | `true` | ON | ON | CRITICAL |
 
----
-
-## Team & Authors
-* **Member 2 — Backend, MQTT & IoT Communication**: Mrunal Shisode
-* **Frontend Dashboard**: Zara Shaikh & Team
